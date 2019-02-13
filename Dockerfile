@@ -15,13 +15,13 @@ RUN apt-get upgrade -y
 RUN apt-get install wget emacs vim sudo bzip2 nginx supervisor -y
 
 
-# Create hsapp user --------------------------------------------------------------------------------------#
+# Create hisapp user --------------------------------------------------------------------------------------#
 
 RUN adduser --disabled-password --gecos '' hisapp
 RUN adduser hisapp sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-USER hsapp
+USER hisapp
 
 ENV HIS_HOME /home/hisapp
 WORKDIR $HIS_HOME
