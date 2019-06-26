@@ -139,7 +139,7 @@ def get_database_list(res_id):
 
     hydroserver_list = get_hydroserver_list(res_id)
     if hydroserver_list:
-        db_list["geoserver"]["create_workspace"] = False
+        db_list["hydroserver"]["create_network"] = False
 
     registered_list = []
 
@@ -360,6 +360,7 @@ def register_geoserver_db(res_id, db):
     response = requests.put(rest_url, data=data, headers=headers, auth=geoserver_auth)
 
     if response.status_code != 201:
+        print(response.status_code)
         return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to register GeoServer layer."}
 
     rest_url = f"{geoserver_url}/workspaces/{workspace_id}/{db['store_type']}/{db['layer_name'].replace('/', ' ')}/{db['layer_group']}/{db['file_name']}.json"

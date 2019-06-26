@@ -27,17 +27,19 @@ class Services(viewsets.ViewSet):
 
         db_list_response = utilities.get_database_list(resource_id)
 
-        print(json.dumps(db_list_response))
-
         registered_services = {
             "geoserver": [],
             "hydroserver": []
         }
 
+        print(db_list_response)
+
         if db_list_response["access"] == ("private" or "not_found"):
 
             utilities.unregister_geoserver_databases(resource_id)
             utilities.unregister_hydroserver_databases(resource_id)
+
+            return Response(None, status=status.HTTP_201_CREATED)
 
         elif db_list_response["access"] == "public":
 
@@ -52,14 +54,20 @@ class Services(viewsets.ViewSet):
 
             for db in db_list_response["geoserver"]["register"]:
                 db_info = utilities.register_geoserver_db(resource_id, db)
-                registered_services["geoserver"].append(db_info)
+                if db_info["success"] is False:
+                    utilities.unregister_geoserver_db(resource_id, db)
+                else:
+                    registered_services["geoserver"].append(db_info)
 
             for db in db_list_response["hydroserver"]["unregister"]:
                 utilities.unregister_hydroserver_db(resource_id, db)
 
             for db in db_list_response["hydroserver"]["register"]:
                 db_info = utilities.register_hydroserver_db(resource_id, db)
-                registered_services["hydroserver"].append(db_info)
+                if db_info["success"] is False:
+                    utilities.unregister_geoserver_db(resource_id, db)
+                else:
+                    registered_services["hydroserver"].append(db_info)
 
             geoserver_list = utilities.get_geoserver_list(resource_id)
 
@@ -71,6 +79,6 @@ class Services(viewsets.ViewSet):
             if not hydroserver_list:
                 utilities.unregister_hydroserver_databases(resource_id)
 
-        response = utilities.build_hydroshare_response(resource_id, registered_services, geoserver_list, hydroserver_list)
+            response = utilities.build_hydroshare_response(resource_id, registered_services, geoserver_list, hydroserver_list)
 
-        return Response(response, status=status.HTTP_201_CREATED)
+            return Response(response, status=status.HTTP_201_CREATED)

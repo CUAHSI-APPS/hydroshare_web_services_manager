@@ -132,21 +132,21 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = '/home/hisapp/hydroshare_his/static/'
 
-PROXY_BASE_URL = "http://127.0.0.1:8000/his"
+PROXY_BASE_URL = "http://127.0.0.1:8060/his"
 
 
 # HydroShare HIS Connection settings
 
 HIS = {
-    "hydroshare_url": "https://www.hydroshare.org/hsapi",
+    "hydroshare_url": "https://beta.hydroshare.org/hsapi",
     "geoserver_url": "http://127.0.0.1:8181/geoserver/rest",
-    "geoserver_data_dir": "/irods_vault",
+    "geoserver_data_dir": "/irods_vault", #"/irods_vault/hydroshare/vaults/hydrotest/home/betaDataProxy",
     "geoserver_user": "admin",
-    "geoserver_pass": "geoserver",
+    "geoserver_pass": "geoserver", #"Wht-RrC-anG-pu7",
     "geoserver_ns": "HS",
-    "hydroserver_url": "http://127.0.0.1:8000/hydroserver/rest",
-    "hydroserver_data_dir": "/Users/klippold/Desktop/irods_vault",
+    "hydroserver_url": "http://127.0.0.1:8090/hydroserver/rest",
+    "hydroserver_data_dir": "/irods_vault", #"/irods_vault/hydrotest/home/betaDataProxy",
     "hydroserver_user": "admin",
-    "hydroserver_pass": "default"
+    "hydroserver_pass": "default" #"Wht-RrC-anG-pu7"
 }
 
