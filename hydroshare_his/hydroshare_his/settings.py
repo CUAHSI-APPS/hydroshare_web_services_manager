@@ -25,7 +25,10 @@ SECRET_KEY = '8*%8v)rjwn8h2y&e$bx%updl=pb6ncxbfzy+jit%-1_n8poj)7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = []
+CSRF_COOKIE_DOMAIN = ['127.0.0.1']
+CSRF_COOKIE_SECURE = True
+ALLOWED_HOSTS = ['127.0.0.1']
 
 
 # Application definition
@@ -128,9 +131,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/static/his/'
 
-STATIC_ROOT = '/home/hisapp/hydroshare_his/static/'
+STATIC_ROOT = '/static/his/'
 
 PROXY_BASE_URL = "http://127.0.0.1:8060/his"
 
@@ -138,15 +141,15 @@ PROXY_BASE_URL = "http://127.0.0.1:8060/his"
 # HydroShare HIS Connection settings
 
 HIS = {
-    "hydroshare_url": "https://beta.hydroshare.org/hsapi",
-    "geoserver_url": "http://127.0.0.1:8181/geoserver/rest",
-    "geoserver_data_dir": "/irods_vault", #"/irods_vault/hydroshare/vaults/hydrotest/home/betaDataProxy",
-    "geoserver_user": "admin",
-    "geoserver_pass": "geoserver", #"Wht-RrC-anG-pu7",
-    "geoserver_ns": "HS",
-    "hydroserver_url": "http://127.0.0.1:8090/hydroserver/rest",
-    "hydroserver_data_dir": "/irods_vault", #"/irods_vault/hydrotest/home/betaDataProxy",
-    "hydroserver_user": "admin",
-    "hydroserver_pass": "default" #"Wht-RrC-anG-pu7"
+    "hydroshare_url": None,
+    "geoserver_url": None,
+    "geoserver_data_dir":  None,
+    "geoserver_user": None,
+    "geoserver_pass": None,
+    "geoserver_ns": None,
+    "hydroserver_url": None,
+    "hydroserver_data_dir": None,
+    "hydroserver_user": None,
+    "hydroserver_pass": None
 }
 

@@ -10,7 +10,15 @@ def get_layer_style(max_value, min_value, ndv_value, layer_id):
     """
     Sets default style for raster layers.
     """
-
+    if ndv_value < min_value:
+        low_ndv = f'<ColorMapEntry color="#000000" quantity="{ndv_value}" label="nodata" opacity="0.0" />'
+        high_ndv = ""
+    elif ndv_value > max_value:
+        low_ndv = ""
+        high_ndv = f'<ColorMapEntry color="#000000" quantity="{ndv_value}" label="nodata" opacity="0.0" />'
+    else:
+        low_ndv = ""
+        high_ndv = ""
     layer_style = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
     <StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
       xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,9 +34,10 @@ def get_layer_style(max_value, min_value, ndv_value, layer_id):
               <RasterSymbolizer>
                 <Opacity>1.0</Opacity>
                 <ColorMap>
-                  <ColorMapEntry color="#000000" quantity="{ndv_value}" label="nodata" opacity="0.0" />
+                  {low_ndv}
                   <ColorMapEntry color="#000000" quantity="{min_value}" label="values" />
                   <ColorMapEntry color="#FFFFFF" quantity="{max_value}" label="values" />
+                  {high_ndv}
                 </ColorMap>
               </RasterSymbolizer>
             </Rule>
@@ -91,13 +100,14 @@ def get_hydroserver_list(res_id):
 
     hydroserver_url = settings.HIS.get("hydroserver_url")
 
-    rest_url = f"{hydroserver_url}/network/{res_id}/databases/"
-    response = requests.get(rest_url)
+    if hydroserver_url is not None:
+        rest_url = f"{hydroserver_url}/manage/network/{res_id}/databases/"
+        response = requests.get(rest_url)
 
-    if response.status_code == 200:
-        response_content = json.loads(response.content)
-        for database in response_content:
-            database_list.append(database["database_id"])
+        if response.status_code == 200:
+            response_content = json.loads(response.content)
+            for database in response_content:
+                database_list.append(database["database_id"])
 
     return database_list
 
@@ -145,11 +155,13 @@ def get_database_list(res_id):
 
     for result in file_list:
         if (
-                #result["logical_file_type"] == "GeoRasterLogicalFile" and 
-                result["content_type"] == "image/tiff"
+                result["logical_file_type"] == "GeoRasterLogicalFile" and 
+                result["content_type"] == "image/tiff" and 
+                settings.HIS.get("geoserver_url") is not None
             ) or (
-                #result["logical_file_type"] == "GeoFeatureLogicalFile" and 
-                result["content_type"] == "application/x-qgis"
+                result["logical_file_type"] == "GeoFeatureLogicalFile" and 
+                result["content_type"] == "application/x-qgis" and
+                settings.HIS.get("geoserver_url") is not None
             ):
 
             layer_name = "/".join(result["url"].split("/")[7:-1])
@@ -189,8 +201,9 @@ def get_database_list(res_id):
                     )
 
         elif (
-                #result["logical_file_type"] == "TimeSeriesLogicalFile" and 
-                result["url"].split("/")[-1].split(".")[-1] in ("sqlite", "db")
+                result["logical_file_type"] == "TimeSeriesLogicalFile" and 
+                result["url"].split("/")[-1].split(".")[-1] in ("sqlite", "db") and
+                settings.HIS.get("hydroserver_url") is not None
             ):
 
             layer_name = "/".join(result["url"].split("/")[7:-1])
@@ -272,7 +285,7 @@ def register_hydroserver_network(res_id):
 
     unregister_hydroserver_databases(res_id)
 
-    rest_url = f"{hydroserver_url}/networks/"
+    rest_url = f"{hydroserver_url}/manage/networks/"
 
     data = {
         "network_id": res_id
@@ -309,7 +322,10 @@ def unregister_geoserver_databases(res_id):
 
     rest_url = f"{geoserver_url}/workspaces/{workspace_id}"
 
-    response = requests.delete(rest_url, params=params, auth=geoserver_auth, headers=headers)
+    if geoserver_url is not None:
+        response = requests.delete(rest_url, params=params, auth=geoserver_auth, headers=headers)
+    else:
+        response = None
 
     return response
 
@@ -327,9 +343,12 @@ def unregister_hydroserver_databases(res_id):
         hydroserver_pass
     )
 
-    rest_url = f"{hydroserver_url}/network/{res_id}/"
+    rest_url = f"{hydroserver_url}/manage/network/{res_id}/"
 
-    response = requests.delete(rest_url, auth=hydroserver_auth)
+    if hydroserver_url is not None:
+        response = requests.delete(rest_url, auth=hydroserver_auth)
+    else:
+        response = None
 
     return response
 
@@ -355,12 +374,14 @@ def register_geoserver_db(res_id, db):
         "content-type": "application/json"
     }
 
+    if any(i in db['layer_name'] for i in [".", ","]):
+        return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to register GeoServer layer."}
+
     rest_url = f"{geoserver_url}/workspaces/{workspace_id}/{db['store_type']}/{db['layer_name'].replace('/', ' ')}/external.{db['file_type']}"
     data = f"file://{geoserver_directory}/{db['hs_path']}"
     response = requests.put(rest_url, data=data, headers=headers, auth=geoserver_auth)
 
     if response.status_code != 201:
-        print(response.status_code)
         return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to register GeoServer layer."}
 
     rest_url = f"{geoserver_url}/workspaces/{workspace_id}/{db['store_type']}/{db['layer_name'].replace('/', ' ')}/{db['layer_group']}/{db['file_name']}.json"
@@ -380,7 +401,6 @@ def register_geoserver_db(res_id, db):
     if response.status_code != 200:
         return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to register GeoServer layer."}
 
-    
     if db["layer_type"] == "GeographicRaster":
         try:
             hydroshare_url = "/".join(settings.HIS.get("hydroshare_url").split("/")[:-1])
@@ -395,7 +415,8 @@ def register_geoserver_db(res_id, db):
                     layer_max = element.text
                 if element.get("key") == "STATISTICS_MINIMUM":
                     layer_min = element.text
-            if layer_max == None or layer_min == None:
+
+            if layer_max == None or layer_min == None or layer_min >= layer_max:
                 print("NO LAYER MAX/MIN")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
@@ -430,7 +451,7 @@ def register_geoserver_db(res_id, db):
         except:
             print("UNABLE TO CREATE RASTER STYLE")
 
-    return {"success": True, "type": db["layer_type"], "layer_name": db["layer_name"], "message": f"{'/'.join((geoserver_url.split('/')[:-1]))}/{workspace_id}/wms?service=WMS&version=1.1.0&request=GetMap&layers={workspace_id}:{urllib.parse.quote(db['layer_name'].replace('/', ' '))}&bbox={bbox['minx']}%2C{bbox['miny']}%2C{bbox['maxx']}%2C{bbox['maxy']}&width=612&height=768&srs={bbox['crs']['$']}&format=application/openlayers"}
+    return {"success": True, "type": db["layer_type"], "layer_name": db["layer_name"], "message": f"{'/'.join((geoserver_url.split('/')[:-1]))}/{workspace_id}/wms?service=WMS&version=1.1.0&request=GetMap&layers={workspace_id}:{urllib.parse.quote(db['layer_name'].replace('/', ' '))}&bbox={bbox['minx']}%2C{bbox['miny']}%2C{bbox['maxx']}%2C{bbox['maxy']}&width=612&height=768&srs={bbox['crs']}&format=application/openlayers"}
 
 
 def unregister_geoserver_db(res_id, db):
@@ -457,8 +478,11 @@ def unregister_geoserver_db(res_id, db):
         "update": "overwrite", "recurse": True
     }
 
-    rest_url = f"{geoserver_url}/workspaces/{workspace_id}/{db['store_type']}/{db['layer_name'].replace('/', ' ')}"
-    response = requests.delete(rest_url, params=params, headers=headers, auth=geoserver_auth)
+    if geoserver_url is not None:
+        rest_url = f"{geoserver_url}/workspaces/{workspace_id}/{db['store_type']}/{db['layer_name'].replace('/', ' ')}"
+        response = requests.delete(rest_url, params=params, headers=headers, auth=geoserver_auth)
+    else:
+        response = None
 
     return response
 
@@ -474,7 +498,7 @@ def register_hydroserver_db(res_id, db):
         hydroserver_pass
     )
 
-    rest_url = f"{hydroserver_url}/network/{res_id}/databases/"
+    rest_url = f"{hydroserver_url}/manage/network/{res_id}/databases/"
 
     db_path = f"{hydroserver_data_dir}/{db['hs_path']}"
     data = {
@@ -482,7 +506,7 @@ def register_hydroserver_db(res_id, db):
         "database_id": str(db["database_name"]),
         "database_name": str(db["layer_title"]),
         "database_path": str(db_path),
-        "database_type": "odm2"
+        "database_type": "odm2_sqlite"
     }
 
     response = requests.post(rest_url, data=data, auth=hydroserver_auth)
@@ -490,7 +514,7 @@ def register_hydroserver_db(res_id, db):
     if response.status_code != 201:
         return {"success": False, "type": "Timeseries", "message": "Error: Unable to register WaterOneFlow data services."}
 
-    return {"success": True, "type": "Timeseries", "message": f"{hydroserver_url}/network/{res_id}/database/{db['database_name']}/"}
+    return {"success": True, "type": "Timeseries", "message": f"{hydroserver_url}/refts/catalog/?network_id={res_id}&database_id={db['database_name']}"}
 
 
 def unregister_hydroserver_db(res_id, db):
@@ -506,9 +530,12 @@ def unregister_hydroserver_db(res_id, db):
         hydroserver_pass
     )
 
-    rest_url = f"{hydroserver_url}/network/{res_id}/database/{db['database_name']}"
+    rest_url = f"{hydroserver_url}/manage/network/{res_id}/database/{db['database_name']}/"
 
-    response = requests.delete(rest_url, auth=hydroserver_auth)
+    if hydroserver_url is not None:
+        response = requests.delete(rest_url, auth=hydroserver_auth)
+    else:
+        response = None
 
     return(response)
 
@@ -536,7 +563,7 @@ def build_hydroshare_response(res_id, registered_services, geoserver_list, hydro
         response["resource"]["WCS Endpoint"] = f"{'/'.join((geoserver_url.split('/')[:-1]))}/wcs?service=WCS&version=1.1.0&request=GetCapabilities&namespace={workspace_id}"
 
     if hydroserver_list:
-        response["resource"]["WOF Endpoint"] = f"{hydroserver_url}/network/{res_id}/"
+        response["resource"]["WOF Endpoint"] = f"{hydroserver_url}/refts/catalog/?network_id={res_id}"
 
     for i in registered_services["geoserver"]:
         response["content"].append(i)

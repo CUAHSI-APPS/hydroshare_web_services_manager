@@ -32,8 +32,6 @@ class Services(viewsets.ViewSet):
             "hydroserver": []
         }
 
-        print(db_list_response)
-
         if db_list_response["access"] == ("private" or "not_found"):
 
             utilities.unregister_geoserver_databases(resource_id)
