@@ -51,6 +51,7 @@ ENV PATH /home/hisapp/miniconda2/bin:$PATH
 RUN conda update conda
 RUN conda update --all
 
+
 RUN conda env create -f environment.yml
 RUN echo "source activate his" > ~/.bashrc
 
