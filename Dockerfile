@@ -49,8 +49,6 @@ RUN rm Miniconda2-4.5.12-Linux-x86_64.sh
 ENV PATH /home/hisapp/miniconda2/bin:$PATH
 
 RUN conda update conda
-RUN conda update --all
-
 
 RUN conda env create -f environment.yml
 RUN echo "source activate his" > ~/.bashrc
