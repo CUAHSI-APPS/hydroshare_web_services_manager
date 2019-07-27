@@ -417,17 +417,14 @@ def register_geoserver_db(res_id, db):
                     layer_min = element.text
 
             if layer_max == None or layer_min == None or layer_min >= layer_max:
-                print("NO LAYER MAX/MIN")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
             try:
                 layer_ndv = vrt.find(".//NoDataValue").text
             except:
-                print("MISSING NDV")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
             if layer_ndv == None:
-                print("MISSING NDV")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
             layer_style = get_layer_style(layer_max, layer_min, layer_ndv, db["layer_name"].replace("/", " "))
@@ -437,7 +434,6 @@ def register_geoserver_db(res_id, db):
             response = requests.post(rest_url, data=layer_style, auth=geoserver_auth, headers=headers)
 
             if response.status_code != 201:
-                print("UNABLE TO POST SLD")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
             rest_url = f"{geoserver_url}/layers/{workspace_id}:{db['layer_name'].replace('/', ' ')}"
@@ -446,10 +442,9 @@ def register_geoserver_db(res_id, db):
             response = requests.put(rest_url, data=body, auth=geoserver_auth, headers=headers)
 
             if response.status_code != 200:
-                print("UNABLE TO SET DEFAULT STYLE")
                 return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
         except:
-            print("UNABLE TO CREATE RASTER STYLE")
+            return {"success": False, "type": db["layer_type"], "layer_name": db["layer_name"], "message": "Error: Unable to parse VRT file."}
 
     return {"success": True, "type": db["layer_type"], "layer_name": db["layer_name"], "message": f"{'/'.join((geoserver_url.split('/')[:-1]))}/{workspace_id}/wms?service=WMS&version=1.1.0&request=GetMap&layers={workspace_id}:{urllib.parse.quote(db['layer_name'].replace('/', ' '))}&bbox={bbox['minx']}%2C{bbox['miny']}%2C{bbox['maxx']}%2C{bbox['maxy']}&width=612&height=768&srs={bbox['crs']}&format=application/openlayers"}
 
@@ -512,7 +507,7 @@ def register_hydroserver_db(res_id, db):
     response = requests.post(rest_url, data=data, auth=hydroserver_auth)
 
     if response.status_code != 201:
-        return {"success": False, "type": "Timeseries", "message": "Error: Unable to register WaterOneFlow data services."}
+        return {"success": False, "type": "Timeseries", "message": "Error: Unable to register Water Data Server database."}
 
     return {"success": True, "type": "Timeseries", "message": f"{hydroserver_url}/refts/catalog/?network_id={res_id}&database_id={db['database_name']}"}
 

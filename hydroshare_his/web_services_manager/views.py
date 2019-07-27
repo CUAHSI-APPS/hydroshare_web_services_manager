@@ -37,7 +37,12 @@ class Services(viewsets.ViewSet):
             utilities.unregister_geoserver_databases(resource_id)
             utilities.unregister_hydroserver_databases(resource_id)
 
-            return Response(None, status=status.HTTP_201_CREATED)
+            response = {
+                "resource": {},
+                "content": []
+            }
+
+            return Response(response, status=status.HTTP_201_CREATED)
 
         elif db_list_response["access"] == "public":
 
@@ -50,29 +55,26 @@ class Services(viewsets.ViewSet):
             for db in db_list_response["geoserver"]["unregister"]:
                 utilities.unregister_geoserver_db(resource_id, db)
 
-            for db in db_list_response["geoserver"]["register"]:
-                db_info = utilities.register_geoserver_db(resource_id, db)
-                if db_info["success"] is False:
-                    utilities.unregister_geoserver_db(resource_id, db)
-                else:
-                    registered_services["geoserver"].append(db_info)
-
             for db in db_list_response["hydroserver"]["unregister"]:
                 utilities.unregister_hydroserver_db(resource_id, db)
 
-            for db in db_list_response["hydroserver"]["register"]:
-                db_info = utilities.register_hydroserver_db(resource_id, db)
+            for db in db_list_response["geoserver"]["register"]:
+                db_info = utilities.register_geoserver_db(resource_id, db)
+                registered_services["geoserver"].append(db_info)
                 if db_info["success"] is False:
                     utilities.unregister_geoserver_db(resource_id, db)
-                else:
-                    registered_services["hydroserver"].append(db_info)
+
+            for db in db_list_response["hydroserver"]["register"]:
+                db_info = utilities.register_hydroserver_db(resource_id, db)
+                registered_services["hydroserver"].append(db_info)
+                if db_info["success"] is False:
+                    utilities.unregister_hydroserver_db(resource_id, db)
 
             geoserver_list = utilities.get_geoserver_list(resource_id)
+            hydroserver_list = utilities.get_hydroserver_list(resource_id)
 
             if not geoserver_list:
                 utilities.unregister_geoserver_databases(resource_id)
-
-            hydroserver_list = utilities.get_hydroserver_list(resource_id)
 
             if not hydroserver_list:
                 utilities.unregister_hydroserver_databases(resource_id)

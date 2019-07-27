@@ -26,9 +26,9 @@ SECRET_KEY = '8*%8v)rjwn8h2y&e$bx%updl=pb6ncxbfzy+jit%-1_n8poj)7'
 DEBUG = True
 
 CSRF_TRUSTED_ORIGINS = []
-CSRF_COOKIE_DOMAIN = ['127.0.0.1']
 CSRF_COOKIE_SECURE = True
-ALLOWED_HOSTS = ['127.0.0.1']
+CSRF_COOKIE_NAME = 'hsws_csrf_token'
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
